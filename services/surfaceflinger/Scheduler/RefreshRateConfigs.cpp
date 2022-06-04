@@ -352,8 +352,12 @@ RefreshRate RefreshRateConfigs::getBestRefreshRateLocked(
         }
     }
 
-    // Touch boost whenever possible as we opportunistically enter idle aggressively
-    if (globalSignals.touch) {
+    const bool hasExplicitVoteLayers = explicitDefaultVoteLayers > 0 ||
+            explicitExactOrMultipleVoteLayers > 0 || explicitExact > 0;
+
+    // Consider the touch event if there are no Explicit* layers. Otherwise wait until after we've
+    // selected a refresh rate to see if we should apply touch boost.
+    if (globalSignals.touch && !hasExplicitVoteLayers) {
         ALOGV("TouchBoost - choose %s", getMaxRefreshRateByPolicyLocked().getName().c_str());
         setTouchConsidered();
         return getMaxRefreshRateByPolicyLocked();
@@ -365,8 +369,6 @@ RefreshRate RefreshRateConfigs::getBestRefreshRateLocked(
     const Policy* policy = getCurrentPolicyLocked();
     const bool primaryRangeIsSingleRate =
             policy->primaryRange.min.equalsWithMargin(policy->primaryRange.max);
-    const bool hasExplicitVoteLayers = explicitDefaultVoteLayers > 0 ||
-            explicitExactOrMultipleVoteLayers > 0 || explicitExact > 0;
 
     if (!globalSignals.touch && globalSignals.idle &&
         !(primaryRangeIsSingleRate && hasExplicitVoteLayers)) {
